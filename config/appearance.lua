@@ -60,4 +60,6 @@ return {
       saturation = 1,
       brightness = 1,
    },
+   -- remove title bar
+   window_decorations = "RESIZE"
 }
