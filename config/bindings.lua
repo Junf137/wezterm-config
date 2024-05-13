@@ -198,6 +198,11 @@ local mouse_bindings = {
       mods = 'CTRL',
       action = act.OpenLinkAtMouseCursor,
    },
+   {
+      event = { Up = { streak = 1, button = 'Right' } },
+      mods = 'NONE',
+      action = act({ PasteFrom = "Clipboard" }),
+   },
 }
 
 return {
