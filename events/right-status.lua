@@ -103,6 +103,7 @@ M.setup = function(opts)
       local battery_text, battery_icon = battery_info()
 
       cells
+         -- :update_segment_text('date_text', wezterm.strftime('%a %H:%M'))
          :update_segment_text('date_text', wezterm.strftime(valid_opts.date_format))
          :update_segment_text('battery_icon', battery_icon)
          :update_segment_text('battery_text', battery_text)
