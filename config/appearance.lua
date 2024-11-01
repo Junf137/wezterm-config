@@ -65,4 +65,6 @@ return {
       fade_out_duration_ms = 250,
       target = 'CursorColor',
    },
+   -- remove title bar
+   window_decorations = "RESIZE"
 }
