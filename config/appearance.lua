@@ -4,8 +4,9 @@ local colors = require('colors.custom')
 
 return {
    max_fps = 120,
-   -- front_end = 'WebGpu',
-   front_end = 'OpenGL',
+   -- Using XWayland instead of Wayland for compatibility fix
+   enable_wayland=false,
+   front_end = 'WebGpu',
    webgpu_power_preference = 'HighPerformance',
    webgpu_preferred_adapter = gpu_adapters:pick_best(),
    -- webgpu_preferred_adapter = gpu_adapters:pick_manual('Dx12', 'IntegratedGpu'),
@@ -67,5 +68,5 @@ return {
       target = 'CursorColor',
    },
    -- remove title bar
-   window_decorations = "RESIZE"
+   window_decorations = "NONE"
 }
