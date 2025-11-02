@@ -1,8 +1,10 @@
 local wezterm = require('wezterm')
 local platform = require('utils.platform')
 
--- local font = 'Maple Mono SC NF'
+-- local font_family = 'Maple Mono NF'
 local font_family = 'FiraCode Nerd Font Mono'
+-- local font_family = 'CartographCF Nerd Font'
+
 local font_size = platform.is_mac and 12 or platform.is_win and 12 or platform.is_linux and 12 or 12
 
 return {
