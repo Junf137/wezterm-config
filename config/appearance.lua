@@ -72,5 +72,5 @@ return {
       target = 'CursorColor',
    },
    -- remove title bar
-   window_decorations = "RESIZE"
+   window_decorations = "NONE"
 }
