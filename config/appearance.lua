@@ -1,8 +1,9 @@
 local gpu_adapters = require('utils.gpu-adapter')
 local backdrops = require('utils.backdrops')
 local colors = require('colors.custom')
+local platform = require('utils.platform')
 
-return {
+local config = {
    max_fps = 120,
    front_end = 'WebGpu', ---@type 'WebGpu' | 'OpenGL' | 'Software'
    webgpu_power_preference = 'HighPerformance',
@@ -74,3 +75,11 @@ return {
    -- remove title bar
    window_decorations = "NONE"
 }
+
+-- Linux-specific configuration
+if platform.is_linux then
+   -- Using XWayland instead of Wayland for compatibility fix
+   config.enable_wayland = false
+end
+
+return config
