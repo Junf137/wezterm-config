@@ -59,6 +59,20 @@ end
 ---   initial load of the Terminal config.
 function BackDrops:set_images()
    self.images = wezterm.glob(self.images_dir .. GLOB_PATTERN)
+
+   -- Fallback to default_bg.jpeg if no images found in backdrops folder
+   if #self.images == 0 then
+      local default_bg = wezterm.config_dir .. '/default_bg.jpeg'
+      local f = io.open(default_bg, 'r')
+      if f then
+         f:close()
+         self.images = { default_bg }
+         wezterm.log_info('BackDrops: Using default_bg.jpeg (backdrops folder empty)')
+      else
+         wezterm.log_warn('BackDrops: No images found and default_bg.jpeg missing')
+      end
+   end
+
    return self
 end
 

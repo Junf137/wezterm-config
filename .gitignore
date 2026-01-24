@@ -3,3 +3,6 @@
 /lua_modules
 /.luarocks
 .DS_Store
+
+# ignore backdrop images (stored externally)
+backdrops
