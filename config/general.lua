@@ -4,7 +4,13 @@ return {
    exit_behavior = 'CloseOnCleanExit', -- if the shell program exited with a successful status
    exit_behavior_messaging = 'Verbose',
    status_update_interval = 1000,
+   -- Audible bell is handled by `events/bell.lua` (plays a platform-appropriate sound)
    audible_bell = 'Disabled',
+   visual_bell = {
+      fade_in_duration_ms = 75,
+      fade_out_duration_ms = 75,
+      target = 'CursorColor',
+   },
 
    scrollback_lines = 20000,
 
