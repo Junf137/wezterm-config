@@ -7,11 +7,9 @@ local font_family = 'FiraCode Nerd Font Mono'
 
 local font_size = platform.is_mac and 12 or platform.is_win and 12 or platform.is_linux and 12 or 12
 
+---@type Config
 return {
-   font = wezterm.font({
-      family = font_family,
-      weight = 'DemiLight',
-   }),
+   font = wezterm.font({ family = font_family, weight = 'DemiLight' }),
    font_size = font_size,
 
    --ref: https://wezfurlong.org/wezterm/config/lua/config/freetype_pcf_long_family_names.html#why-doesnt-wezterm-use-the-distro-freetype-or-match-its-configuration
