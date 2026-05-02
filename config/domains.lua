@@ -1,5 +1,6 @@
 local platform = require('utils.platform')
 
+---@type Config
 local options = {
    -- ref: https://wezfurlong.org/wezterm/config/lua/SshDomain.html
    ssh_domains = {},
