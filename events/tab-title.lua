@@ -72,6 +72,20 @@ local ICON_PREFIX = {
    edit     = nf.fa_edit,             --[[  ]]
 }
 
+-- Process-name -> glyph for shell / multiplexer prefix icons.
+-- Glyphs lifted from ~/.tmux/plugins/tmux-nerd-font-window-name/bin/defaults.yml
+-- stylua: ignore
+local ICON_WRAPPER = {
+   tmux       = '\u{ebc8}', --[[  ]]
+   ssh        = '\u{f08c0}', --[[ 󰣀 ]]
+   zsh        = '\u{e795}', --[[  ]]
+   bash       = '\u{e795}', --[[  ]]
+   fish       = '\u{e795}', --[[  ]]
+   nu         = '\u{e795}', --[[  ]]
+   tcsh       = '\u{e795}', --[[  ]]
+   powershell = '\u{ebc7}', --[[  ]]
+}
+
 ---@enum UnseenOutputIcon
 local ICON_UNSEEN = {
    cirlce = nf.fa_circle, --[[  ]]
@@ -243,6 +257,10 @@ local function create_base_title(pane_title, process_name)
    elseif ustr.starts_with(base_title, 'InputLine:') then
       prefix_icon = ICON_PREFIX.edit
       base_title = base_title:gsub('InputLine: ', '')
+
+   -- if process is a known shell or multiplexer (icon stands in for the name)
+   elseif ICON_WRAPPER[process_name] then
+      prefix_icon = ICON_WRAPPER[process_name]
    end
 
    return base_title, prefix_icon
@@ -252,11 +270,14 @@ end
 ---@param base_title string
 ---@param max_width number
 ---@param inset number
-local function create_title(process_name, base_title, max_width, inset)
+---@param has_icon boolean? if true, the icon stands in for `process_name` so skip the `process_name ~ ` prefix
+local function create_title(process_name, base_title, max_width, inset, has_icon)
    local title
 
-   if process_name:len() > 0 then
-      title = process_name .. ' ~ ' .. base_title
+   if has_icon then
+      title = base_title ~= '' and base_title or process_name
+   elseif process_name:len() > 0 then
+      title = process_name .. ' \u{203a} ' .. base_title
    else
       title = base_title
    end
@@ -496,7 +517,7 @@ function Tab:update_cells(event_opts, tab, hover, max_width)
       base_title = self.locked_title
    end
 
-   local title = create_title(process_name, base_title, max_width, inset)
+   local title = create_title(process_name, base_title, max_width, inset, prefix_icon ~= nil)
 
    title_cells:update_segment_text(RS.title, title)
 
