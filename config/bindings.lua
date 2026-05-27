@@ -226,6 +226,10 @@ local keys = {
    },
 }
 
+if platform.is_mac then
+   table.insert(keys, { key = 'a', mods = mod.SUPER, action = act.SendString('\u{1b}a') })
+end
+
 -- stylua: ignore
 ---@type table<string, Key[]>
 local key_tables = {
