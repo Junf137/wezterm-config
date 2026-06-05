@@ -249,11 +249,20 @@ Most of the key bindings revolve around a <kbd>SUPER</kbd> and <kbd>SUPER_REV</k
 
 #### Cursor Movements
 
-| Keys                                   | Action                                                     |
-| -------------------------------------- | ---------------------------------------------------------- |
-| <kbd>SUPER</kbd>+<kbd>LeftArrow</kbd>  | Move cursor to Line Start                                  |
-| <kbd>SUPER</kbd>+<kbd>RightArrow</kbd> | Move cursor to Line End                                    |
-| <kbd>SUPER</kbd>+<kbd>Backspace</kbd>  | Clear Line <sub>(does not work in PowerShell or cmd)</sub> |
+| Keys                                   | Action                    |
+| -------------------------------------- | ------------------------- |
+| <kbd>SUPER</kbd>+<kbd>LeftArrow</kbd>  | Move cursor to Line Start |
+| <kbd>SUPER</kbd>+<kbd>RightArrow</kbd> | Move cursor to Line End   |
+
+#### Deletion
+
+| Platform            | Keys                                             | Action                  |
+| ------------------- | ------------------------------------------------ | ----------------------- |
+| macOS               | <kbd>Ctrl</kbd>+<kbd>Delete</kbd>                | Delete character        |
+| macOS               | <kbd>Option</kbd>+<kbd>Delete</kbd>              | Delete previous word    |
+| macOS               | <kbd>Command</kbd>+<kbd>Delete</kbd>             | Delete to line start    |
+| Linux/Windows       | <kbd>Ctrl</kbd>+<kbd>Delete</kbd>                | Delete word             |
+| Linux/Windows       | <kbd>Alt</kbd>/<kbd>Win</kbd>+<kbd>Delete</kbd>  | No action               |
 
 &nbsp;
 

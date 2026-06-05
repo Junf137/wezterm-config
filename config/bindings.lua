@@ -52,10 +52,6 @@ local keys = {
    -- cursor movement --
    { key = 'LeftArrow',  mods = mod.SUPER,     action = act.SendString('\u{1b}OH') },
    { key = 'RightArrow', mods = mod.SUPER,     action = act.SendString('\u{1b}OF') },
-   { key = 'Backspace',  mods = mod.SUPER,     action = act.SendString('\u{15}') },
-   -- Avoid Ctrl+Backspace arriving at tmux as C-h, which vim-tmux-navigator uses for pane-left.
-   { key = 'Backspace',  mods = 'CTRL',        action = act.SendString('\u{17}') },
-   { key = 'Delete',     mods = 'CTRL',        action = act.SendString('\u{1b}[3;5~') },
 
    -- copy/paste --
    { key = 'c',          mods = 'CTRL|SHIFT',  action = act.CopyTo('Clipboard') },
@@ -230,7 +226,21 @@ local keys = {
 }
 
 if platform.is_mac then
+   -- Match macOS text editing: Ctrl+Delete is character delete, Option+Delete
+   -- is word delete, and Command+Delete is line delete.
+   table.insert(keys, { key = 'Backspace', mods = 'CTRL', action = act.SendString('\u{7f}') })
+   table.insert(keys, { key = 'Backspace', mods = 'ALT', action = act.SendString('\u{17}') })
+   table.insert(keys, { key = 'Backspace', mods = mod.SUPER, action = act.SendString('\u{15}') })
    table.insert(keys, { key = 'a', mods = mod.SUPER, action = act.SendString('\u{1b}a') })
+elseif platform.is_linux or platform.is_win then
+   -- Match Linux/Windows text editing: Ctrl+Delete deletes a word; Alt/Win
+   -- Delete variants should not leak through as shell Meta-delete bindings.
+   table.insert(keys, { key = 'Backspace', mods = 'CTRL', action = act.SendString('\u{17}') })
+   table.insert(keys, { key = 'phys:Delete', mods = 'CTRL', action = act.SendString('\u{1b}[3;5~') })
+   table.insert(keys, { key = 'Backspace', mods = 'ALT', action = act.Nop })
+   table.insert(keys, { key = 'phys:Delete', mods = 'ALT', action = act.Nop })
+   table.insert(keys, { key = 'Backspace', mods = 'SUPER', action = act.Nop })
+   table.insert(keys, { key = 'phys:Delete', mods = 'SUPER', action = act.Nop })
 end
 
 -- stylua: ignore
