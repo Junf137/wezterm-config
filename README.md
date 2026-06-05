@@ -262,7 +262,9 @@ Most of the key bindings revolve around a <kbd>SUPER</kbd> and <kbd>SUPER_REV</k
 | macOS               | <kbd>Option</kbd>+<kbd>Delete</kbd>              | Delete previous word    |
 | macOS               | <kbd>Command</kbd>+<kbd>Delete</kbd>             | Delete to line start    |
 | Linux/Windows       | <kbd>Ctrl</kbd>+<kbd>Delete</kbd>                | Delete word             |
-| Linux/Windows       | <kbd>Alt</kbd>/<kbd>Win</kbd>+<kbd>Delete</kbd>  | No action               |
+| Linux/Windows       | <kbd>Alt</kbd>+<kbd>Backspace</kbd>              | Delete to line start    |
+| Linux/Windows       | <kbd>Alt</kbd>+<kbd>Delete</kbd>                 | Delete to line end      |
+| Linux/Windows       | <kbd>Win</kbd>+<kbd>Delete</kbd>                 | No action               |
 
 &nbsp;
 

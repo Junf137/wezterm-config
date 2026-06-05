@@ -233,12 +233,12 @@ if platform.is_mac then
    table.insert(keys, { key = 'Backspace', mods = mod.SUPER, action = act.SendString('\u{15}') })
    table.insert(keys, { key = 'a', mods = mod.SUPER, action = act.SendString('\u{1b}a') })
 elseif platform.is_linux or platform.is_win then
-   -- Match Linux/Windows text editing: Ctrl+Delete deletes a word; Alt/Win
-   -- Delete variants should not leak through as shell Meta-delete bindings.
+   -- Match Linux/Windows text editing for Ctrl+Delete, while adding Alt+Delete
+   -- as a terminal-local line delete pair to match Alt+Left/Right line movement.
    table.insert(keys, { key = 'Backspace', mods = 'CTRL', action = act.SendString('\u{17}') })
    table.insert(keys, { key = 'phys:Delete', mods = 'CTRL', action = act.SendString('\u{1b}[3;5~') })
-   table.insert(keys, { key = 'Backspace', mods = 'ALT', action = act.Nop })
-   table.insert(keys, { key = 'phys:Delete', mods = 'ALT', action = act.Nop })
+   table.insert(keys, { key = 'Backspace', mods = 'ALT', action = act.SendString('\u{15}') })
+   table.insert(keys, { key = 'phys:Delete', mods = 'ALT', action = act.SendString('\u{1b}[3;3~') })
    table.insert(keys, { key = 'Backspace', mods = 'SUPER', action = act.Nop })
    table.insert(keys, { key = 'phys:Delete', mods = 'SUPER', action = act.Nop })
 end
