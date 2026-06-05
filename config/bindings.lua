@@ -53,6 +53,9 @@ local keys = {
    { key = 'LeftArrow',  mods = mod.SUPER,     action = act.SendString('\u{1b}OH') },
    { key = 'RightArrow', mods = mod.SUPER,     action = act.SendString('\u{1b}OF') },
    { key = 'Backspace',  mods = mod.SUPER,     action = act.SendString('\u{15}') },
+   -- Avoid Ctrl+Backspace arriving at tmux as C-h, which vim-tmux-navigator uses for pane-left.
+   { key = 'Backspace',  mods = 'CTRL',        action = act.SendString('\u{17}') },
+   { key = 'Delete',     mods = 'CTRL',        action = act.SendString('\u{1b}[3;5~') },
 
    -- copy/paste --
    { key = 'c',          mods = 'CTRL|SHIFT',  action = act.CopyTo('Clipboard') },
