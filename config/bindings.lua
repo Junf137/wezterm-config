@@ -231,6 +231,7 @@ if platform.is_mac then
    table.insert(keys, { key = 'Backspace', mods = 'CTRL', action = act.SendString('\u{7f}') })
    table.insert(keys, { key = 'Backspace', mods = 'ALT', action = act.SendString('\u{17}') })
    table.insert(keys, { key = 'Backspace', mods = mod.SUPER, action = act.SendString('\u{15}') })
+   table.insert(keys, { key = 'Enter', mods = 'SUPER|SHIFT', action = act.SendString('\u{1b}\r') })
    table.insert(keys, { key = 'a', mods = mod.SUPER, action = act.SendString('\u{1b}a') })
 elseif platform.is_linux or platform.is_win then
    -- Match Linux/Windows text editing for Ctrl+Delete, while adding Alt+Delete
