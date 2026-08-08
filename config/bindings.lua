@@ -8,9 +8,17 @@ local mod = {}
 if platform.is_mac then
    mod.SUPER = 'SUPER'
    mod.SUPER_REV = 'SUPER|CTRL'
+   -- Deliberately not SUPER_REV: SUPER|CTRL Space is the key equivalent of the
+   -- Edit > "Emoji & Symbols" menu item that macOS puts in every app's menu bar.
+   -- The menu bar consumes it before wezterm's key handling ever runs, so that
+   -- leader is dead on macOS -- and it cannot be switched off from
+   -- AppleSymbolicHotKeys (id 164 is already disabled and makes no difference),
+   -- only by overriding the menu item globally via NSUserKeyEquivalents.
+   mod.LEADER = 'SUPER|SHIFT'
 elseif platform.is_win or platform.is_linux then
    mod.SUPER = 'ALT' -- to not conflict with Windows key shortcuts
    mod.SUPER_REV = 'ALT|CTRL'
+   mod.LEADER = 'ALT|CTRL'
 end
 
 -- stylua: ignore
@@ -283,7 +291,7 @@ local mouse_bindings = {
 return {
    disable_default_key_bindings = true,
    -- disable_default_mouse_bindings = true,
-   leader = { key = 'Space', mods = mod.SUPER_REV },
+   leader = { key = 'Space', mods = mod.LEADER },
    keys = keys,
    key_tables = key_tables,
    mouse_bindings = mouse_bindings,
