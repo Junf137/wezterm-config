@@ -21,6 +21,24 @@ elseif platform.is_win or platform.is_linux then
    mod.LEADER = 'ALT|CTRL'
 end
 
+-- The tmux the F6 session launcher runs. Always the local one, on whichever machine
+-- this config is loaded on. It has to be an absolute path on macOS: wezterm is started
+-- there by launchd from Finder/Dock with launchd's own minimal PATH
+-- (/usr/bin:/bin:/usr/sbin:/sbin), Homebrew's bin is not on it, and both
+-- run_child_process and spawn_tab exec directly rather than through a login shell that
+-- would have fixed the PATH up. A bare 'tmux' fails with ENOENT there.
+local TMUX = 'tmux'
+if platform.is_mac then
+   for _, candidate in ipairs({ '/opt/homebrew/bin/tmux', '/usr/local/bin/tmux' }) do
+      local probe = io.open(candidate, 'r')
+      if probe then
+         probe:close()
+         TMUX = candidate
+         break
+      end
+   end
+end
+
 -- stylua: ignore
 ---@type Key[]
 local keys = {
@@ -33,6 +51,33 @@ local keys = {
       key = 'F5',
       mods = 'NONE',
       action = act.ShowLauncherArgs({ flags = 'FUZZY|WORKSPACES' }),
+   },
+   -- Open one tab per local tmux session, enumerated at press-time.
+   -- `-A` attaches or creates, so a session that vanished between the listing and the
+   -- attach can't fail; `-D` makes it a hard attach, detaching whatever client already
+   -- holds the session. That is the point rather than a side effect: two clients on one
+   -- session clamp every window to the smaller client's size, so attaching from a
+   -- second window without `-D` reshapes the session around the smaller one.
+   -- Tab labels come from the pane title, which `set-titles-string` in tmux.conf sets
+   -- to `host · #S`.
+   {
+      key = 'F6',
+      mods = 'NONE',
+      action = wezterm.action_callback(function(window, _pane)
+         local ok, stdout, stderr = wezterm.run_child_process({
+            TMUX, 'list-sessions', '-F', '#{session_name}',
+         })
+         if not ok then
+            wezterm.log_error('tmux list-sessions failed: ' .. (stderr or ''))
+            window:toast_notification('wezterm', 'no tmux sessions here', nil, 4000)
+            return
+         end
+
+         local mux_win = window:mux_window()
+         for name in stdout:gmatch('[^\n]+') do
+            mux_win:spawn_tab({ args = { TMUX, 'new-session', '-A', '-D', '-s', name } })
+         end
+      end),
    },
    { key = 'F11', mods = 'NONE',    action = act.ToggleFullScreen },
    { key = 'F12', mods = 'NONE',    action = act.ShowDebugOverlay },
