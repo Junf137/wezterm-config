@@ -27,6 +27,8 @@ end
 -- (/usr/bin:/bin:/usr/sbin:/sbin), Homebrew's bin is not on it, and both
 -- run_child_process and spawn_tab exec directly rather than through a login shell that
 -- would have fixed the PATH up. A bare 'tmux' fails with ENOENT there.
+-- F8 never uses this: the tmux it drives is REMOTE_HOST's, and that name is resolved
+-- over there, by the login shell ssh hands the command string to.
 local TMUX = 'tmux'
 if platform.is_mac then
    for _, candidate in ipairs({ '/opt/homebrew/bin/tmux', '/usr/local/bin/tmux' }) do
@@ -39,10 +41,28 @@ if platform.is_mac then
    end
 end
 
----List the local tmux sessions as { name, detail } pairs, or nil plus a message fit to
----show the user. The two fields are tab-separated rather than space-separated because a
----session name may itself contain spaces -- tmux rejects tabs in one, so the split is
----unambiguous.
+-- The machine F8 lists and attaches. A bare 'ssh' is safe where a bare 'tmux' was not:
+-- /usr/bin/ssh is part of the base system on both platforms, and /usr/bin *is* on
+-- launchd's minimal PATH. Checked from a stripped environment (`env -i`, so no
+-- SSH_AUTH_SOCK either): key auth off ~/.ssh/id_ed25519 needs no agent behind it.
+local SSH = 'ssh'
+local REMOTE_HOST = 'bigyaboom2'
+
+---list-sessions format shared by the local and the remote listing, so both parse the same
+---way. The two fields are tab-separated rather than space-separated because a session
+---name may itself contain spaces -- tmux rejects tabs in one, so the split is unambiguous.
+local SESSION_FMT = '#{session_name}\t#{session_windows} windows#{?session_attached, (attached),}'
+
+---Wrap `word` in single quotes for the remote shell that ssh runs its command string
+---through. Everything inside is literal, which the format string above *needs*: `#`
+---begins a word there, and an unquoted word-initial `#` is a comment, which would
+---truncate the command rather than fail it.
+local function shell_quote(word)
+   local escaped = word:gsub("'", "'\\''")
+   return "'" .. escaped .. "'"
+end
+
+---Run `argv`, returning its stdout, or nil plus a message fit to show the user.
 ---run_child_process has two failure modes and reports them differently: a process that
 ---ran and exited non-zero comes back as ok=false, but one that could not be spawned at
 ---all *raises*. Only pcall catches the second, and without it the raise tears the whole
@@ -50,25 +70,27 @@ end
 ---is a guess (macOS, where TMUX falls back to a bare 'tmux' that launchd's PATH cannot
 ---resolve) would fail with no diagnostic whatsoever. pcall shifts every return one place
 ---right, hence four names for three values.
-local function tmux_sessions()
-   local spawned, ok, stdout, stderr = pcall(wezterm.run_child_process, {
-      TMUX, 'list-sessions', '-F',
-      '#{session_name}\t#{session_windows} windows#{?session_attached, (attached),}',
-   })
+local function run_argv(argv)
+   local spawned, ok, stdout, stderr = pcall(wezterm.run_child_process, argv)
    if not spawned then
       -- In this branch `ok` is the raised error rather than a status, and it arrives as
       -- ~200 characters: the cause on the first line, then a Lua stack traceback naming
       -- poll/pcall/main chunk. Only the first line belongs in a desktop notification.
       local message = tostring(ok):match('^[^\n]*')
-      return nil, 'cannot run ' .. TMUX .. ': ' .. message
+      return nil, 'cannot run ' .. argv[1] .. ': ' .. message
    end
    if not ok then
       -- tmux's own words: "no server running on ...", but equally "protocol version
       -- mismatch" after an upgrade, which naming one cause in the toast would misreport.
+      -- Through ssh this is the *remote* tmux's stderr, or ssh's own when the hop failed.
       local message = tostring(stderr or ''):gsub('%s+$', '')
-      return nil, message ~= '' and message or 'tmux list-sessions failed'
+      return nil, message ~= '' and message or (argv[1] .. ' failed')
    end
+   return stdout
+end
 
+---Split list-sessions output into { name, detail } pairs.
+local function parse_sessions(stdout)
    local sessions = {}
    for line in stdout:gmatch('[^\n]+') do
       local name, detail = line:match('^([^\t]+)\t(.*)$')
@@ -79,6 +101,32 @@ local function tmux_sessions()
    return sessions
 end
 
+---The local tmux's sessions, or nil plus a message fit to show the user.
+local function tmux_sessions()
+   local stdout, err = run_argv({ TMUX, 'list-sessions', '-F', SESSION_FMT })
+   if not stdout then
+      return nil, err
+   end
+   return parse_sessions(stdout)
+end
+
+---REMOTE_HOST's tmux sessions, or nil plus a message that always names the host -- an
+---unprefixed "no server running on ..." reads exactly like the local one.
+---BatchMode is what stops a host that wants a password from hanging on a prompt nobody
+---can answer: this child has no tty, and run_child_process blocks the gui thread until it
+---returns. ConnectTimeout is the same guard against a host that is simply off, where
+---ssh's default is the kernel's TCP timeout -- over a minute of frozen wezterm.
+local function remote_sessions()
+   local stdout, err = run_argv({
+      SSH, '-o', 'BatchMode=yes', '-o', 'ConnectTimeout=5', REMOTE_HOST,
+      'tmux list-sessions -F ' .. shell_quote(SESSION_FMT),
+   })
+   if not stdout then
+      return nil, REMOTE_HOST .. ': ' .. err
+   end
+   return parse_sessions(stdout)
+end
+
 ---argv that hard-attaches to `name` in whatever pane it is spawned into.
 ---`-A` attaches or creates, so a session that vanished between a listing and the attach
 ---can't fail. `-D` is what makes it a *hard* attach, detaching whatever client already
@@ -87,6 +135,59 @@ end
 ---without `-D` reshapes the session around the smaller one.
 local function tmux_attach_argv(name)
    return { TMUX, 'new-session', '-A', '-D', '-s', name }
+end
+
+---The same hard attach, one ssh hop away. `-t` is not optional: ssh allocates a tty only
+---when given no command to run, and tmux will not attach without one. No BatchMode here,
+---unlike the listing -- this one lands in a real pane, where a prompt is answerable.
+local function remote_attach_argv(name)
+   return { SSH, '-t', REMOTE_HOST, 'tmux new-session -A -D -s ' .. shell_quote(name) }
+end
+
+---A fuzzy picker over `opts.list()`'s sessions that hard-attaches the chosen one, with
+---`opts.attach`, in a new tab. The selector is raised with perform_action rather than
+---returned: an action_callback's return value is discarded, so returning an action does
+---nothing. `opts.label` names the machine in the title and the prompt and `opts.empty` is
+---the toast for a server with no sessions, so a remote result never reads as a local one.
+local function attach_picker(opts)
+   return wezterm.action_callback(function(window, pane)
+      local sessions, err = opts.list()
+      if not sessions then
+         wezterm.log_error(err)
+         window:toast_notification('wezterm', err, nil, 4000)
+         return
+      end
+      if #sessions == 0 then
+         window:toast_notification('wezterm', opts.empty, nil, 4000)
+         return
+      end
+
+      local choices = {}
+      for _, session in ipairs(sessions) do
+         -- `id` is what gets attached, `label` is what is shown and fuzzy-matched --
+         -- so typing 'attached' narrows to the sessions that already hold a client.
+         table.insert(choices, {
+            id = session.name,
+            label = session.name .. '  ' .. session.detail,
+         })
+      end
+
+      window:perform_action(
+         act.InputSelector({
+            title = 'InputSelector: Attach ' .. opts.label .. ' Session',
+            choices = choices,
+            fuzzy = true,
+            fuzzy_description = 'Attach ' .. opts.label .. ' session: ',
+            action = wezterm.action_callback(function(inner_window, _inner_pane, id, _label)
+               if not id then
+                  return
+               end
+               inner_window:mux_window():spawn_tab({ args = opts.attach(id) })
+            end),
+         }),
+         pane
+      )
+   end)
 end
 
 -- stylua: ignore
@@ -130,49 +231,31 @@ local keys = {
       end),
    },
    -- Pick one local tmux session from a fuzzy list and hard-attach it in a new tab.
-   -- The selector is raised with perform_action rather than returned: an
-   -- action_callback's return value is discarded, so returning an action does nothing.
    {
       key = 'F7',
       mods = 'NONE',
-      action = wezterm.action_callback(function(window, pane)
-         local sessions, err = tmux_sessions()
-         if not sessions then
-            wezterm.log_error(err)
-            window:toast_notification('wezterm', err, nil, 4000)
-            return
-         end
-         if #sessions == 0 then
-            window:toast_notification('wezterm', 'no tmux sessions here', nil, 4000)
-            return
-         end
-
-         local choices = {}
-         for _, session in ipairs(sessions) do
-            -- `id` is what gets attached, `label` is what is shown and fuzzy-matched --
-            -- so typing 'attached' narrows to the sessions that already hold a client.
-            table.insert(choices, {
-               id = session.name,
-               label = session.name .. '  ' .. session.detail,
-            })
-         end
-
-         window:perform_action(
-            act.InputSelector({
-               title = 'InputSelector: Attach tmux Session',
-               choices = choices,
-               fuzzy = true,
-               fuzzy_description = 'Attach tmux session: ',
-               action = wezterm.action_callback(function(inner_window, _inner_pane, id, _label)
-                  if not id then
-                     return
-                  end
-                  inner_window:mux_window():spawn_tab({ args = tmux_attach_argv(id) })
-               end),
-            }),
-            pane
-         )
-      end),
+      action = attach_picker({
+         label = 'tmux',
+         empty = 'no tmux sessions here',
+         list = tmux_sessions,
+         attach = tmux_attach_argv,
+      }),
+   },
+   -- The same picker one ssh hop away, over REMOTE_HOST's sessions. Everything that makes
+   -- the local attach work survives the hop: the remote tmux writes its title through the
+   -- ssh pty like any other, so the tab is labelled by `set-titles-string` there too --
+   -- whose 5-char host field is the only thing telling a remote tab from a local one --
+   -- and a second press re-attaches with `-D`, whose displaced ssh exits 0, so
+   -- `exit_behavior = 'CloseOnCleanExit'` reaps the pane it left behind.
+   {
+      key = 'F8',
+      mods = 'NONE',
+      action = attach_picker({
+         label = REMOTE_HOST,
+         empty = 'no tmux sessions on ' .. REMOTE_HOST,
+         list = remote_sessions,
+         attach = remote_attach_argv,
+      }),
    },
    { key = 'F11', mods = 'NONE',    action = act.ToggleFullScreen },
    { key = 'F12', mods = 'NONE',    action = act.ShowDebugOverlay },
