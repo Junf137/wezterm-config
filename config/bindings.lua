@@ -49,9 +49,17 @@ local SSH = 'ssh'
 local REMOTE_HOST = 'bigyaboom2'
 
 ---list-sessions format shared by the local and the remote listing, so both parse the same
----way. The two fields are tab-separated rather than space-separated because a session
----name may itself contain spaces -- tmux rejects tabs in one, so the split is unambiguous.
-local SESSION_FMT = '#{session_name}\t#{session_windows} windows#{?session_attached, (attached),}'
+---way. Every field is printable and the free-form one is last, and neither is cosmetic. A
+---tmux client whose locale does not name UTF-8 is not flagged UTF-8-capable, and the
+---server then sanitises the output of commands it runs for that client, replacing every
+---non-printable byte with '_'. Each client ssh starts is such a client: ssh forwards no
+---LC_* by default, so the login shell it runs the command through has an empty locale. A
+---tab separator survives the ssh channel intact and is then eaten on the far side --
+---measured against tmux 3.7b, which is both ends here -- so the split has to be on
+---something printable. Session names may hold spaces, hence the name last, behind two
+---fields of fixed shape. A name holding non-printables is mangled the same way and would
+---attach to the wrong thing, but tmux rejects most of what could do that in `-s`.
+local SESSION_FMT = '#{session_windows} #{?session_attached,1,0} #{session_name}'
 
 ---Wrap `word` in single quotes for the remote shell that ssh runs its command string
 ---through. Everything inside is literal, which the format string above *needs*: `#`
@@ -89,13 +97,17 @@ local function run_argv(argv)
    return stdout
 end
 
----Split list-sessions output into { name, detail } pairs.
+---Split list-sessions output into { name, detail } pairs, rebuilding the detail SESSION_FMT
+---deliberately does not spell out, so that every field it carries stays fixed in shape.
 local function parse_sessions(stdout)
    local sessions = {}
    for line in stdout:gmatch('[^\n]+') do
-      local name, detail = line:match('^([^\t]+)\t(.*)$')
+      local windows, attached, name = line:match('^(%d+) ([01]) (.+)$')
       if name then
-         table.insert(sessions, { name = name, detail = detail })
+         table.insert(sessions, {
+            name = name,
+            detail = windows .. ' windows' .. (attached == '1' and ' (attached)' or ''),
+         })
       end
    end
    return sessions
