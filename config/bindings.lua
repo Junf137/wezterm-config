@@ -48,17 +48,13 @@ end
 local SSH = 'ssh'
 local REMOTE_HOST = 'bigyaboom2'
 
+-- The remote-command path skips the interactive shell that normally sets LANG, so `-u`
+-- gives F8 the same UTF-8 tmux output as a manual ssh followed by tmux attach.
+local REMOTE_TMUX = 'tmux -u'
+
 ---list-sessions format shared by the local and the remote listing, so both parse the same
----way. Every field is printable and the free-form one is last, and neither is cosmetic. A
----tmux client whose locale does not name UTF-8 is not flagged UTF-8-capable, and the
----server then sanitises the output of commands it runs for that client, replacing every
----non-printable byte with '_'. Each client ssh starts is such a client: ssh forwards no
----LC_* by default, so the login shell it runs the command through has an empty locale. A
----tab separator survives the ssh channel intact and is then eaten on the far side --
----measured against tmux 3.7b, which is both ends here -- so the split has to be on
----something printable. Session names may hold spaces, hence the name last, behind two
----fields of fixed shape. A name holding non-printables is mangled the same way and would
----attach to the wrong thing, but tmux rejects most of what could do that in `-s`.
+---way. Every separator is printable and the free-form session name is last, so parsing
+---does not depend on control bytes surviving the ssh and tmux command-output path.
 local SESSION_FMT = '#{session_windows} #{?session_attached,1,0} #{session_name}'
 
 ---Wrap `word` in single quotes for the remote shell that ssh runs its command string
@@ -131,7 +127,7 @@ end
 local function remote_sessions()
    local stdout, err = run_argv({
       SSH, '-o', 'BatchMode=yes', '-o', 'ConnectTimeout=5', REMOTE_HOST,
-      'tmux list-sessions -F ' .. shell_quote(SESSION_FMT),
+      REMOTE_TMUX .. ' list-sessions -F ' .. shell_quote(SESSION_FMT),
    })
    if not stdout then
       return nil, REMOTE_HOST .. ': ' .. err
@@ -149,14 +145,13 @@ local function tmux_attach_argv(name)
    return { TMUX, 'new-session', '-A', '-D', '-s', name }
 end
 
----The same hard attach, one ssh hop away. `-t` is not optional: ssh allocates a tty only
----when given no command to run, and tmux will not attach without one. No BatchMode here,
----unlike the listing -- this one lands in a real pane, where a prompt is answerable.
+---The equivalent of a manual ssh followed by `tmux attach-session -t name`. `-t` is not
+---optional because ssh does not allocate a tty automatically when given a remote command.
 local function remote_attach_argv(name)
-   return { SSH, '-t', REMOTE_HOST, 'tmux new-session -A -D -s ' .. shell_quote(name) }
+   return { SSH, '-t', REMOTE_HOST, REMOTE_TMUX .. ' attach-session -t ' .. shell_quote(name) }
 end
 
----A fuzzy picker over `opts.list()`'s sessions that hard-attaches the chosen one, with
+---A fuzzy picker over `opts.list()`'s sessions that attaches the chosen one, with
 ---`opts.attach`, in a new tab. The selector is raised with perform_action rather than
 ---returned: an action_callback's return value is discarded, so returning an action does
 ---nothing. `opts.label` names the machine in the title and the prompt and `opts.empty` is
@@ -253,12 +248,7 @@ local keys = {
          attach = tmux_attach_argv,
       }),
    },
-   -- The same picker one ssh hop away, over REMOTE_HOST's sessions. Everything that makes
-   -- the local attach work survives the hop: the remote tmux writes its title through the
-   -- ssh pty like any other, so the tab is labelled by `set-titles-string` there too --
-   -- whose 5-char host field is the only thing telling a remote tab from a local one --
-   -- and a second press re-attaches with `-D`, whose displaced ssh exits 0, so
-   -- `exit_behavior = 'CloseOnCleanExit'` reaps the pane it left behind.
+   -- Pick and attach a remote session using the same tmux semantics as a manual attach.
    {
       key = 'F8',
       mods = 'NONE',

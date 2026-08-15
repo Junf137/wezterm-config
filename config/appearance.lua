@@ -65,13 +65,6 @@ local config = {
       brightness = 1,
    },
 
-   visual_bell = {
-      fade_in_function = 'EaseIn',
-      fade_in_duration_ms = 250,
-      fade_out_function = 'EaseOut',
-      fade_out_duration_ms = 250,
-      target = 'CursorColor',
-   },
    -- remove title bar
    window_decorations = "NONE"
 }
