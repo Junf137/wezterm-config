@@ -42,7 +42,8 @@ return {
       },
       -- Then handle URLs not wrapped in brackets
       {
-         regex = '\\b\\w+://\\S+[)/a-zA-Z0-9-]+',
+         -- Do not treat a prose/Markdown closing paren as part of the URL.
+         regex = '\\b\\w+://\\S*[/a-zA-Z0-9-]+',
          format = '$0',
       },
       -- implicit mailto link

@@ -268,11 +268,12 @@ local keys = {
       action = wezterm.action.QuickSelectArgs({
          label = 'open url',
          patterns = {
-            '\\((https?://\\S+)\\)',
-            '\\[(https?://\\S+)\\]',
-            '\\{(https?://\\S+)\\}',
-            '<(https?://\\S+)>',
-            '\\bhttps?://\\S+[)/a-zA-Z0-9-]+'
+            -- Match inside wrappers so only the URL is selected and opened.
+            '(?<=\\()https?://\\S+(?=\\))',
+            '(?<=\\[)https?://\\S+(?=\\])',
+            '(?<=\\{)https?://\\S+(?=\\})',
+            '(?<=<)https?://\\S+(?=>)',
+            '\\bhttps?://\\S*[/a-zA-Z0-9-]+',
          },
          action = wezterm.action_callback(function(window, pane)
             local url = window:get_selection_text_for_pane(pane)
