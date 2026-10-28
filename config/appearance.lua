@@ -65,8 +65,8 @@ local config = {
       brightness = 1,
    },
 
-   -- remove title bar
-   window_decorations = "NONE"
+   -- no title bar, keep the resize border so the window can be dragged to scale
+   window_decorations = "RESIZE"
 }
 
 -- Linux-specific configuration

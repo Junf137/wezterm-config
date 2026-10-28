@@ -18,6 +18,14 @@
 
 ### Features
 
+- Windows start at normal size, without automatic maximize or fullscreen.
+  Resize borders are enabled on every platform; the macOS leader is Ctrl+Alt+Space.
+  To check these defaults without opening a window, run:
+
+  ```sh
+  wezterm --config-file tests/window-defaults.lua show-keys --lua >/dev/null
+  ```
+
 - [**Background Image Selector**](https://github.com/KevinSilvester/wezterm-config/blob/master/utils/backdrops.lua)
 
   - Cycle images

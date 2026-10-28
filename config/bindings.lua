@@ -14,7 +14,7 @@ if platform.is_mac then
    -- leader is dead on macOS -- and it cannot be switched off from
    -- AppleSymbolicHotKeys (id 164 is already disabled and makes no difference),
    -- only by overriding the menu item globally via NSUserKeyEquivalents.
-   mod.LEADER = 'SUPER|SHIFT'
+   mod.LEADER = 'CTRL|ALT'
 elseif platform.is_win or platform.is_linux then
    mod.SUPER = 'ALT' -- to not conflict with Windows key shortcuts
    mod.SUPER_REV = 'ALT|CTRL'
