@@ -18,7 +18,7 @@
 
 ### Features
 
-- Windows start at normal size, without automatic maximize or fullscreen.
+- Startup windows are maximized as regular windows, without entering macOS fullscreen.
   Resize borders are enabled on every platform; the macOS leader is Ctrl+Alt+Space.
   To check these defaults without opening a window, run:
 

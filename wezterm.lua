@@ -14,6 +14,7 @@ require('events.tab-title').setup({
 })
 require('events.new-tab-button').setup()
 require('events.bell').setup()
+require('events.gui-startup').setup()
 
 return Config:init()
    :append(require('config.appearance'))
