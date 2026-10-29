@@ -26,7 +26,7 @@ function BackDrops:init()
       current_idx = 1,
       images = {},
       images_dir = wezterm.config_dir .. '/backdrops/',
-      no_bg = false,
+      no_img = false,
    }
    return setmetatable(backdrops, self)
 end
