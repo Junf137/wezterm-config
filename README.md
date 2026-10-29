@@ -87,7 +87,7 @@ runs stylua and luacheck on pushes and pull requests to `main` (`.github/workflo
 | `Ctrl`/`Option`/`Cmd+Backspace` (macOS)     | Delete a character / the previous word / to the line start      |
 | `Ctrl+Backspace` / `Ctrl+Delete` (Linux)    | Delete the previous / next word                                 |
 | `Alt+Backspace` / `Alt+Delete` (Linux)      | Delete to the line start / end                                  |
-| `Super+Backspace` / `Super+Delete` (Linux)  | Nothing                                                         |
+| `Win+Backspace` / `Win+Delete` (Linux)      | Nothing                                                         |
 
 ## References
 
