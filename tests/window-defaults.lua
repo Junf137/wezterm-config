@@ -39,8 +39,6 @@ wezterm.mux.spawn_window = original_spawn
 
 assert(config.window_decorations == 'RESIZE', 'Resize borders must work on every platform')
 
-local platform = require('utils.platform')
-local expected_leader = platform.is_mac and 'CTRL|ALT' or 'ALT|CTRL'
-assert(config.leader.mods == expected_leader, 'Unexpected platform leader shortcut')
+assert(config.leader.mods == 'CTRL|ALT', 'The leader must be Ctrl+Alt+Space on every platform')
 
 return config
