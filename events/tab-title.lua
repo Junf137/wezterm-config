@@ -69,7 +69,6 @@ local ICON_PREFIX = {
    select   = nf.md_selection_search, --[[ 󱈅 ]]
    --  search = '🔭',
    launcher = nf.oct_rocket,          --[[  ]]
-   edit     = nf.fa_edit,             --[[  ]]
 }
 
 -- Process-name -> glyph for shell / multiplexer prefix icons.
@@ -88,7 +87,7 @@ local ICON_WRAPPER = {
 
 ---@enum UnseenOutputIcon
 local ICON_UNSEEN = {
-   cirlce = nf.fa_circle, --[[  ]]
+   circle = nf.fa_circle, --[[  ]]
 
    numbered_box_1 = nf.md_numeric_1_box_multiple, --[[ 󰼏 ]]
    numbered_box_2 = nf.md_numeric_2_box_multiple, --[[ 󰼐 ]]
@@ -250,13 +249,10 @@ local function create_base_title(pane_title, process_name)
    elseif ustr.starts_with(process_name, 'wsl') then
       prefix_icon = ICON_PREFIX.wsl
 
-   -- if `PromptInputLine` or `InputSelector` overlay is active
+   -- if `InputSelector` overlay is active
    elseif ustr.starts_with(base_title, 'InputSelector:') then
       prefix_icon = ICON_PREFIX.select
       base_title = base_title:gsub('InputSelector: ', '')
-   elseif ustr.starts_with(base_title, 'InputLine:') then
-      prefix_icon = ICON_PREFIX.edit
-      base_title = base_title:gsub('InputLine: ', '')
 
    -- if process is a known shell or multiplexer (icon stands in for the name)
    elseif ICON_WRAPPER[process_name] then
@@ -301,42 +297,36 @@ local progress_stale = (function()
       percentage    = 300,
    }
 
-   ---@type {sum: integer, last_changed: integer}[]
+   ---@type table<integer, {sum: integer, last_changed: integer}>
    local entries = {}
 
    ---Mark progress value as stale if the output hasn't changed in 30 seconds
-   ---@param tab_id integer
    ---@param pane_id integer
-   ---@param status 'indeterminate'|'error'|'percentage'
-   ---@param pct integer
+   ---@param status? 'indeterminate'|'error'|'percentage' `nil` once the pane's progress ends
+   ---@param pct? integer
    ---@return boolean `true` if stale
-   return function(tab_id, pane_id, status, pct)
-      local entry_id = (tab_id << 4) | pane_id
-
-      if not entries[entry_id] then
-         entries[entry_id] = {}
-         entries[entry_id].sum = status_score[status] + pct
-         entries[entry_id].last_changed = os.time()
+   return function(pane_id, status, pct)
+      if not status then
+         entries[pane_id] = nil
          return false
       end
 
       local sum = status_score[status] + pct
+      local entry = entries[pane_id]
 
-      if sum ~= entries[entry_id].sum then
-         entries[entry_id].sum = sum
-         entries[entry_id].last_changed = os.time()
+      if not entry or entry.sum ~= sum then
+         entries[pane_id] = { sum = sum, last_changed = os.time() }
          return false
       end
 
-      return os.time() - entries[entry_id].last_changed > PROGRESS_STALE_AFTER
+      return os.time() - entry.last_changed > PROGRESS_STALE_AFTER
    end
 end)()
 
 ---@param options Event.TabTitleOptions
----@param tab_id integer
 ---@param panes PaneInformation[]
 ---@return {icon: string?, status: 'indeterminate'|'percentage'|'error'?}[]
-local function check_progress(options, tab_id, panes)
+local function check_progress(options, panes)
    if not options.show_progress then
       return {}
    end
@@ -366,9 +356,11 @@ local function check_progress(options, tab_id, panes)
       end
 
       if icon and status then
-         if not progress_stale(tab_id, pane.pane_id, status, pct) then
+         if not progress_stale(pane.pane_id, status, pct) then
             table.insert(progress, { icon = icon, status = status })
          end
+      else
+         progress_stale(pane.pane_id)
       end
    end
 
@@ -407,7 +399,7 @@ local function check_unseen_output(options, is_active, panes)
       if options.unseen_icon == 'circle' then
          icon = ICON_UNSEEN[options.unseen_icon]
       else
-         icon = ICON_UNSEEN[options.unseen_icon .. '_' .. count]
+         icon = ICON_UNSEEN[options.unseen_icon .. '_' .. math.min(count, 10)]
       end
    end
 
@@ -470,7 +462,7 @@ function Tab:update_cells(event_opts, tab, hover, max_width)
    local process_name = clean_process_name(tab.active_pane.foreground_process_name)
    local base_title, prefix_icon = create_base_title(tab.active_pane.title, process_name)
    local unseen_icon = check_unseen_output(event_opts, tab.is_active, tab.panes)
-   local progress = check_progress(event_opts, tab.tab_id, tab.panes)
+   local progress = check_progress(event_opts, tab.panes)
    local inset = TITLE_INSET.default
 
    -- Prefix icons
@@ -573,15 +565,8 @@ M.setup = function(opts)
    -- Event listener to manually update the tab name
    -- Tab name will remain locked until the `reset-tab-title` is triggered
    wezterm.on('tabs.manual-update-tab-title', function(window, pane)
-      local title = nil
-
-      if ustr.ends_with(wezterm.version, 'custom-build') then
-         title = 'InputLine: Manual Tab Title'
-      end
-
       window:perform_action(
          wezterm.action.PromptInputLine({
-            title = title,
             description = wezterm.format({
                { Foreground = { Color = '#FFFFFF' } },
                { Attribute = { Intensity = 'Bold' } },

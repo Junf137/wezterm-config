@@ -51,22 +51,13 @@ local config = {
    },
    adjust_window_size_when_changing_font_size = false,
    window_close_confirmation = 'NeverPrompt',
-   window_frame = {
-      active_titlebar_bg = '#090909',
-      -- font = fonts.font,
-      -- font_size = fonts.font_size,
-   },
-   -- inactive_pane_hsb = {
-   --    saturation = 0.9,
-   --    brightness = 0.65,
-   -- },
    inactive_pane_hsb = {
       saturation = 1,
       brightness = 1,
    },
 
    -- no title bar, keep the resize border so the window can be dragged to scale
-   window_decorations = "RESIZE"
+   window_decorations = 'RESIZE',
 }
 
 -- Linux-specific configuration

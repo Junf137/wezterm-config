@@ -8,17 +8,9 @@ local mod = {}
 if platform.is_mac then
    mod.SUPER = 'SUPER'
    mod.SUPER_REV = 'SUPER|CTRL'
-   -- Deliberately not SUPER_REV: SUPER|CTRL Space is the key equivalent of the
-   -- Edit > "Emoji & Symbols" menu item that macOS puts in every app's menu bar.
-   -- The menu bar consumes it before wezterm's key handling ever runs, so that
-   -- leader is dead on macOS -- and it cannot be switched off from
-   -- AppleSymbolicHotKeys (id 164 is already disabled and makes no difference),
-   -- only by overriding the menu item globally via NSUserKeyEquivalents.
-   mod.LEADER = 'CTRL|ALT'
 elseif platform.is_win or platform.is_linux then
    mod.SUPER = 'ALT' -- to not conflict with Windows key shortcuts
    mod.SUPER_REV = 'ALT|CTRL'
-   mod.LEADER = 'ALT|CTRL'
 end
 
 -- The tmux the F6/F7 session launchers run. Always the local one, on whichever machine
@@ -126,7 +118,12 @@ end
 ---ssh's default is the kernel's TCP timeout -- over a minute of frozen wezterm.
 local function remote_sessions()
    local stdout, err = run_argv({
-      SSH, '-o', 'BatchMode=yes', '-o', 'ConnectTimeout=5', REMOTE_HOST,
+      SSH,
+      '-o',
+      'BatchMode=yes',
+      '-o',
+      'ConnectTimeout=5',
+      REMOTE_HOST,
       REMOTE_TMUX .. ' list-sessions -F ' .. shell_quote(SESSION_FMT),
    })
    if not stdout then
@@ -294,7 +291,6 @@ local keys = {
    -- tabs --
    -- tabs: spawn+close
    { key = 't',          mods = mod.SUPER,     action = act.SpawnTab('DefaultDomain') },
-   { key = 't',          mods = mod.SUPER_REV, action = act.SpawnTab({ DomainName = 'wsl:ubuntu-fish' }) },
    { key = 'w',          mods = mod.SUPER_REV, action = act.CloseCurrentTab({ confirm = false }) },
 
    -- tabs: navigation
@@ -315,22 +311,6 @@ local keys = {
    { key = 'n',          mods = mod.SUPER,     action = act.SpawnWindow },
 
    -- window: zoom window
-   {
-      key = '-',
-      mods = mod.SUPER,
-      action = wezterm.action_callback(function(window, _pane)
-         local dimensions = window:get_dimensions()
-         -- on Windows 11 (the only OS I'm able to test this on), `is_full_screen` is always false (it's a bug).
-         -- Calling `set_inner_size` when the window is actually in fullscreen will cause the
-         -- program UI to completely freeze.
-         if platform.is_win or dimensions.is_full_screen then
-            return
-         end
-         local new_width = dimensions.pixel_width - 50
-         local new_height = dimensions.pixel_height - 50
-         window:set_inner_size(new_width, new_height)
-      end)
-   },
    {
       key = '=',
       mods = mod.SUPER,
@@ -471,7 +451,10 @@ elseif platform.is_linux or platform.is_win then
    -- Match Linux/Windows text editing for Ctrl+Delete, while adding Alt+Delete
    -- as a terminal-local line delete pair to match Alt+Left/Right line movement.
    table.insert(keys, { key = 'Backspace', mods = 'CTRL', action = act.SendString('\u{17}') })
-   table.insert(keys, { key = 'phys:Delete', mods = 'CTRL', action = act.SendString('\u{1b}[3;5~') })
+   table.insert(
+      keys,
+      { key = 'phys:Delete', mods = 'CTRL', action = act.SendString('\u{1b}[3;5~') }
+   )
    table.insert(keys, { key = 'Backspace', mods = 'ALT', action = act.SendString('\u{15}') })
    table.insert(keys, { key = 'phys:Delete', mods = 'ALT', action = act.SendString('\u{1b}[3;3~') })
    table.insert(keys, { key = 'Backspace', mods = 'SUPER', action = act.Nop })
@@ -509,7 +492,7 @@ local mouse_bindings = {
    {
       event = { Up = { streak = 1, button = 'Right' } },
       mods = 'NONE',
-      action = act({ PasteFrom = "Clipboard" }),
+      action = act({ PasteFrom = 'Clipboard' }),
    },
 }
 
@@ -517,7 +500,10 @@ local mouse_bindings = {
 return {
    disable_default_key_bindings = true,
    -- disable_default_mouse_bindings = true,
-   leader = { key = 'Space', mods = mod.LEADER },
+   -- Not SUPER_REV (upstream's leader): on macOS, Cmd+Ctrl+Space is the key equivalent of
+   -- Edit > "Emoji & Symbols", which the menu bar consumes before wezterm sees it. Disabling
+   -- AppleSymbolicHotKeys id 164 does not free it; only NSUserKeyEquivalents would.
+   leader = { key = 'Space', mods = 'CTRL|ALT' },
    keys = keys,
    key_tables = key_tables,
    mouse_bindings = mouse_bindings,

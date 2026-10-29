@@ -25,9 +25,11 @@ local function play_cmd(file)
 end
 
 M.setup = function()
-   wezterm.on('bell', function(window, pane)
+   wezterm.on('bell', function()
       local file = SOUND_FILE[platform.os]
-      if not file then return end
+      if not file then
+         return
+      end
       local cmd = play_cmd(file)
       if cmd then
          wezterm.background_child_process(cmd)

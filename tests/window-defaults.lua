@@ -1,4 +1,5 @@
--- Run with: wezterm --config-file tests/window-defaults.lua show-keys --lua
+-- Run with: wezterm --config-file tests/window-defaults.lua show-keys | sed -n 1p
+-- (prints the Leader line only when every assertion passed; see README.md "Check")
 -- Load the complete configuration and verify startup without opening a window.
 local wezterm = require('wezterm')
 local root = wezterm.config_dir .. '/..'
@@ -39,8 +40,6 @@ wezterm.mux.spawn_window = original_spawn
 
 assert(config.window_decorations == 'RESIZE', 'Resize borders must work on every platform')
 
-local platform = require('utils.platform')
-local expected_leader = platform.is_mac and 'CTRL|ALT' or 'ALT|CTRL'
-assert(config.leader.mods == expected_leader, 'Unexpected platform leader shortcut')
+assert(config.leader.mods == 'CTRL|ALT', 'The leader must be Ctrl+Alt+Space on every platform')
 
 return config
