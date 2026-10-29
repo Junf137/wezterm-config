@@ -297,42 +297,36 @@ local progress_stale = (function()
       percentage    = 300,
    }
 
-   ---@type {sum: integer, last_changed: integer}[]
+   ---@type table<integer, {sum: integer, last_changed: integer}>
    local entries = {}
 
    ---Mark progress value as stale if the output hasn't changed in 30 seconds
-   ---@param tab_id integer
    ---@param pane_id integer
-   ---@param status 'indeterminate'|'error'|'percentage'
-   ---@param pct integer
+   ---@param status? 'indeterminate'|'error'|'percentage' `nil` once the pane's progress ends
+   ---@param pct? integer
    ---@return boolean `true` if stale
-   return function(tab_id, pane_id, status, pct)
-      local entry_id = (tab_id << 4) | pane_id
-
-      if not entries[entry_id] then
-         entries[entry_id] = {}
-         entries[entry_id].sum = status_score[status] + pct
-         entries[entry_id].last_changed = os.time()
+   return function(pane_id, status, pct)
+      if not status then
+         entries[pane_id] = nil
          return false
       end
 
       local sum = status_score[status] + pct
+      local entry = entries[pane_id]
 
-      if sum ~= entries[entry_id].sum then
-         entries[entry_id].sum = sum
-         entries[entry_id].last_changed = os.time()
+      if not entry or entry.sum ~= sum then
+         entries[pane_id] = { sum = sum, last_changed = os.time() }
          return false
       end
 
-      return os.time() - entries[entry_id].last_changed > PROGRESS_STALE_AFTER
+      return os.time() - entry.last_changed > PROGRESS_STALE_AFTER
    end
 end)()
 
 ---@param options Event.TabTitleOptions
----@param tab_id integer
 ---@param panes PaneInformation[]
 ---@return {icon: string?, status: 'indeterminate'|'percentage'|'error'?}[]
-local function check_progress(options, tab_id, panes)
+local function check_progress(options, panes)
    if not options.show_progress then
       return {}
    end
@@ -362,9 +356,11 @@ local function check_progress(options, tab_id, panes)
       end
 
       if icon and status then
-         if not progress_stale(tab_id, pane.pane_id, status, pct) then
+         if not progress_stale(pane.pane_id, status, pct) then
             table.insert(progress, { icon = icon, status = status })
          end
+      else
+         progress_stale(pane.pane_id)
       end
    end
 
@@ -466,7 +462,7 @@ function Tab:update_cells(event_opts, tab, hover, max_width)
    local process_name = clean_process_name(tab.active_pane.foreground_process_name)
    local base_title, prefix_icon = create_base_title(tab.active_pane.title, process_name)
    local unseen_icon = check_unseen_output(event_opts, tab.is_active, tab.panes)
-   local progress = check_progress(event_opts, tab.tab_id, tab.panes)
+   local progress = check_progress(event_opts, tab.panes)
    local inset = TITLE_INSET.default
 
    -- Prefix icons
