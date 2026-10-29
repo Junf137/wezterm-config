@@ -1,4 +1,4 @@
--- Run with: wezterm --config-file tests/window-defaults.lua show-keys | head -1
+-- Run with: wezterm --config-file tests/window-defaults.lua show-keys | sed -n 1p
 -- (prints the Leader line only when every assertion passed; see README.md "Check")
 -- Load the complete configuration and verify startup without opening a window.
 local wezterm = require('wezterm')

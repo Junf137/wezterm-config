@@ -32,7 +32,7 @@ The font is FiraCode Nerd Font Mono (Homebrew cask `font-fira-code-nerd-font`).
 startup, resize-border and leader defaults:
 
 ```sh
-wezterm --config-file tests/window-defaults.lua show-keys | head -1
+wezterm --config-file tests/window-defaults.lua show-keys | sed -n 1p
 ```
 
 It prints `Leader: Physical(Space) ALT | CTRL 1s` only when every assertion passed. A failed
