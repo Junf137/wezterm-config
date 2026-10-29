@@ -66,7 +66,7 @@ local config = {
    },
 
    -- no title bar, keep the resize border so the window can be dragged to scale
-   window_decorations = "RESIZE"
+   window_decorations = 'RESIZE',
 }
 
 -- Linux-specific configuration

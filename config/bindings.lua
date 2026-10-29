@@ -126,7 +126,12 @@ end
 ---ssh's default is the kernel's TCP timeout -- over a minute of frozen wezterm.
 local function remote_sessions()
    local stdout, err = run_argv({
-      SSH, '-o', 'BatchMode=yes', '-o', 'ConnectTimeout=5', REMOTE_HOST,
+      SSH,
+      '-o',
+      'BatchMode=yes',
+      '-o',
+      'ConnectTimeout=5',
+      REMOTE_HOST,
       REMOTE_TMUX .. ' list-sessions -F ' .. shell_quote(SESSION_FMT),
    })
    if not stdout then
@@ -471,7 +476,10 @@ elseif platform.is_linux or platform.is_win then
    -- Match Linux/Windows text editing for Ctrl+Delete, while adding Alt+Delete
    -- as a terminal-local line delete pair to match Alt+Left/Right line movement.
    table.insert(keys, { key = 'Backspace', mods = 'CTRL', action = act.SendString('\u{17}') })
-   table.insert(keys, { key = 'phys:Delete', mods = 'CTRL', action = act.SendString('\u{1b}[3;5~') })
+   table.insert(
+      keys,
+      { key = 'phys:Delete', mods = 'CTRL', action = act.SendString('\u{1b}[3;5~') }
+   )
    table.insert(keys, { key = 'Backspace', mods = 'ALT', action = act.SendString('\u{15}') })
    table.insert(keys, { key = 'phys:Delete', mods = 'ALT', action = act.SendString('\u{1b}[3;3~') })
    table.insert(keys, { key = 'Backspace', mods = 'SUPER', action = act.Nop })
@@ -509,7 +517,7 @@ local mouse_bindings = {
    {
       event = { Up = { streak = 1, button = 'Right' } },
       mods = 'NONE',
-      action = act({ PasteFrom = "Clipboard" }),
+      action = act({ PasteFrom = 'Clipboard' }),
    },
 }
 
