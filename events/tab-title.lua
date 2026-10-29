@@ -69,7 +69,6 @@ local ICON_PREFIX = {
    select   = nf.md_selection_search, --[[ 󱈅 ]]
    --  search = '🔭',
    launcher = nf.oct_rocket,          --[[  ]]
-   edit     = nf.fa_edit,             --[[  ]]
 }
 
 -- Process-name -> glyph for shell / multiplexer prefix icons.
@@ -88,7 +87,7 @@ local ICON_WRAPPER = {
 
 ---@enum UnseenOutputIcon
 local ICON_UNSEEN = {
-   cirlce = nf.fa_circle, --[[  ]]
+   circle = nf.fa_circle, --[[  ]]
 
    numbered_box_1 = nf.md_numeric_1_box_multiple, --[[ 󰼏 ]]
    numbered_box_2 = nf.md_numeric_2_box_multiple, --[[ 󰼐 ]]
@@ -250,13 +249,10 @@ local function create_base_title(pane_title, process_name)
    elseif ustr.starts_with(process_name, 'wsl') then
       prefix_icon = ICON_PREFIX.wsl
 
-   -- if `PromptInputLine` or `InputSelector` overlay is active
+   -- if `InputSelector` overlay is active
    elseif ustr.starts_with(base_title, 'InputSelector:') then
       prefix_icon = ICON_PREFIX.select
       base_title = base_title:gsub('InputSelector: ', '')
-   elseif ustr.starts_with(base_title, 'InputLine:') then
-      prefix_icon = ICON_PREFIX.edit
-      base_title = base_title:gsub('InputLine: ', '')
 
    -- if process is a known shell or multiplexer (icon stands in for the name)
    elseif ICON_WRAPPER[process_name] then
@@ -407,7 +403,7 @@ local function check_unseen_output(options, is_active, panes)
       if options.unseen_icon == 'circle' then
          icon = ICON_UNSEEN[options.unseen_icon]
       else
-         icon = ICON_UNSEEN[options.unseen_icon .. '_' .. count]
+         icon = ICON_UNSEEN[options.unseen_icon .. '_' .. math.min(count, 10)]
       end
    end
 
@@ -573,15 +569,8 @@ M.setup = function(opts)
    -- Event listener to manually update the tab name
    -- Tab name will remain locked until the `reset-tab-title` is triggered
    wezterm.on('tabs.manual-update-tab-title', function(window, pane)
-      local title = nil
-
-      if ustr.ends_with(wezterm.version, 'custom-build') then
-         title = 'InputLine: Manual Tab Title'
-      end
-
       window:perform_action(
          wezterm.action.PromptInputLine({
-            title = title,
             description = wezterm.format({
                { Foreground = { Color = '#FFFFFF' } },
                { Attribute = { Intensity = 'Bold' } },
