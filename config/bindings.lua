@@ -299,7 +299,6 @@ local keys = {
    -- tabs --
    -- tabs: spawn+close
    { key = 't',          mods = mod.SUPER,     action = act.SpawnTab('DefaultDomain') },
-   { key = 't',          mods = mod.SUPER_REV, action = act.SpawnTab({ DomainName = 'wsl:ubuntu-fish' }) },
    { key = 'w',          mods = mod.SUPER_REV, action = act.CloseCurrentTab({ confirm = false }) },
 
    -- tabs: navigation
@@ -320,22 +319,6 @@ local keys = {
    { key = 'n',          mods = mod.SUPER,     action = act.SpawnWindow },
 
    -- window: zoom window
-   {
-      key = '-',
-      mods = mod.SUPER,
-      action = wezterm.action_callback(function(window, _pane)
-         local dimensions = window:get_dimensions()
-         -- on Windows 11 (the only OS I'm able to test this on), `is_full_screen` is always false (it's a bug).
-         -- Calling `set_inner_size` when the window is actually in fullscreen will cause the
-         -- program UI to completely freeze.
-         if platform.is_win or dimensions.is_full_screen then
-            return
-         end
-         local new_width = dimensions.pixel_width - 50
-         local new_height = dimensions.pixel_height - 50
-         window:set_inner_size(new_width, new_height)
-      end)
-   },
    {
       key = '=',
       mods = mod.SUPER,
